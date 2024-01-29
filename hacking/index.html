@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Image Capture</title>
+</head>
+<body>
+
+<button onclick="takeLiveImage()">Take Live Image</button>
+
+<script>
+function takeLiveImage() {
+  navigator.mediaDevices.getUserMedia({ video: true })
+    .then(function (stream) {
+      const video = document.createElement('video');
+      video.style.display = 'none';
+      document.body.appendChild(video);
+      video.srcObject = stream;
+      video.play();
+
+      // Capture image from video stream
+      setTimeout(function () {
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Convert canvas data to base64 image data
+        const imageData = canvas.toDataURL('image/jpeg');
+
+        // Send image data to the server
+        saveToDatabase(imageData);
+
+        // Cleanup
+        document.body.removeChild(video);
+        stream.getTracks().forEach(track => track.stop());
+      }, 2000); // Capture image after 2 seconds (adjust as needed)
+    })
+    .catch(function (error) {
+      console.error('Error accessing camera:', error);
+    });
+}
+
+function saveToDatabase(imageData) {
+  // Send image data to the server using Fetch API or AJAX
+  fetch('save_image.php', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: 'imageData=' + encodeURIComponent(imageData),
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log(data);
+    alert(data.message);
+  })
+  .catch(error => {
+    console.error('Error saving image:', error);
+  });
+}
+</script>
+
+</body>
+</html>
